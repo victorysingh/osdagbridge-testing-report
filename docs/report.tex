@@ -1,0 +1,165 @@
+\documentclass[10pt,a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[margin=1.6cm,landscape]{geometry}
+\usepackage{longtable,array,tabularx,booktabs,xcolor,hyperref,graphicx,fancyhdr,enumitem}
+\definecolor{passc}{HTML}{1B7F3B}
+\definecolor{failc}{HTML}{B3261E}
+\hypersetup{colorlinks=true,linkcolor=blue!60!black,urlcolor=blue!60!black}
+\setlength{\parindent}{0pt}\setlength{\parskip}{4pt}
+\renewcommand{\arraystretch}{1.15}
+\pagestyle{fancy}\fancyhf{}\fancyfoot[C]{\thepage}\fancyhead[L]{OsdagBridge testing report}\fancyhead[R]{FOSSEE Winter Internship 2026}
+\newcolumntype{Y}{>{\raggedright\arraybackslash}X}
+\begin{document}
+\begin{center}
+{\LARGE\bfseries OsdagBridge: Software Testing and Issue Reporting}\\[4pt]
+FOSSEE Winter Internship 2026 screening task, Osdag (IIT Bombay)\\[2pt]
+Author: YOUR NAME \quad Date: 22 November 2026\\[2pt]
+Test repository: \href{https://github.com/victorysingh/osdagbridge-testing-report}{https://github.com/victorysingh/osdagbridge-testing-report}
+\end{center}
+
+\section{Summary}
+I tested OsdagBridge (plate girder bridge module, \texttt{dev} branch, commit \texttt{d74f56d}) with 29 test cases and 6 consecutive design runs, using default values and custom values for the steel girders, stiffeners, bracing, end diaphragms and the concrete deck. 12 cases passed, the rest found problems. Input validation, repeatability across restarts, and the grade and deck propagation for girder and deck work correctly. The main problems are that several user inputs are not used or are reset (Save Input, Defaults button, bracing and end-diaphragm grade and section, limit-state ticks), that load combination factors are not applied, and that the report contradicts itself.
+
+I posted \textbf{3 new GitHub issues} (\href{https://github.com/Nidhikhare12/OsdagBridge/issues/221}{\#221}, \href{https://github.com/Nidhikhare12/OsdagBridge/issues/222}{\#222}, \href{https://github.com/Nidhikhare12/OsdagBridge/issues/223}{\#223}), each with trigger conditions, evidence, root cause with file and line, and a suggested fix. For bugs that were already reported by others I did not open duplicates; I added \textbf{8 comments} with extra evidence and root cause to \href{https://github.com/Nidhikhare12/OsdagBridge/issues/174}{\#174}, \href{https://github.com/Nidhikhare12/OsdagBridge/issues/71}{\#71}, \href{https://github.com/Nidhikhare12/OsdagBridge/issues/146}{\#146}, \href{https://github.com/Nidhikhare12/OsdagBridge/issues/43}{\#43}, \href{https://github.com/Nidhikhare12/OsdagBridge/issues/216}{\#216}, \href{https://github.com/Nidhikhare12/OsdagBridge/issues/65}{\#65}, \href{https://github.com/Nidhikhare12/OsdagBridge/issues/115}{\#115} and \href{https://github.com/Nidhikhare12/OsdagBridge/issues/116}{\#116}. I checked all 136 existing issues and 84 pull requests before posting.
+
+\section{Environment and method}
+\begin{itemize}[nosep]
+\item Windows, conda environment \texttt{osdagbridge-env}, started with \texttt{python -m osdagbridge.desktop} from \texttt{src}. Source: fork of \texttt{Nidhikhare12/OsdagBridge}, branch \texttt{dev}, commit \texttt{d74f56d}.
+\item Defaults unless stated: Pehalgam (J\&K), no median, no footpath, Optimized design type, steel E~350A, deck M40.
+\item Each design run produced a PDF design report and, where stated, a saved \texttt{.osi} input file (folders \texttt{reports/} and \texttt{osi\_files/} in the repository).
+\item Checks: (1) compare the UI values with the saved input file and with the report; (2) compare numbers between runs that differ in one input; (3) hand calculations (section areas, utilisation ratios, load sums); (4) read the source code to find the cause of each failure.
+\end{itemize}
+
+\section{Test cases}
+Result colours: \textcolor{passc}{\textbf{PASS}} = worked as expected, \textcolor{failc}{\textbf{FAIL}} = error, mismatch or ignored input.
+
+{\small
+\begin{longtable}{|p{1.2cm}|p{6.2cm}|p{3.6cm}|p{7.2cm}|p{1.8cm}|p{3.6cm}|}
+\hline \textbf{ID} & \textbf{Exact parameters} & \textbf{Expected} & \textbf{Actual} & \textbf{Result} & \textbf{Finding / GitHub} \\ \hline \endhead
+TC-01 & Span 30 m, carriageway 10 m, no median, no footpath, skew 0, Optimized, default materials & Design runs, 3D model generated & Ran. Overall width 10.90 m, 5 girders, spacing 2.18 m, deck 250 mm, 3D model and layer toggles work & \textcolor{passc}{\textbf{PASS}} &  \\ \hline
+TC-02 & Span 20 m, carriageway 4.25 m, skew 15, Optimized, default materials & Girder plots start at x = 0 and design shear equals plotted shear & Girder 1 plot x-axis starts at -1.407 m, spike near x = 4 m, max Vy at x = -1.27 m; Design Check Vd 8.25 kN vs plotted max Vy 7.61 kN & \textcolor{failc}{\textbf{FAIL}} & F1 (report only; see \href{https://github.com/Nidhikhare12/OsdagBridge/issues/198}{\#198}, \href{https://github.com/Nidhikhare12/OsdagBridge/issues/132}{\#132}, \href{https://github.com/Nidhikhare12/OsdagBridge/issues/89}{\#89} for related skew issues) \\ \hline
+TC-03 & Same as TC-02 but skew 0 & Smooth plots, x = 0 to 20 m & Axis 0 to 20 m, smooth curves, Vd = Vy = 8.54 kN, Md = Mz = 43.46 kNm & \textcolor{passc}{\textbf{PASS}} &  \\ \hline
+TC-04 & TC-02 model: N / E numbering, rotation, TOP / front / left views, layer toggles, hover tooltips & No crash; skew drawn correctly & No crash. TOP view shows ends slanted about 14 deg (skew drawn correctly) & \textcolor{passc}{\textbf{PASS}} &  \\ \hline
+TC-05 & TC-03 model: hover girder web, flange, intermediate and bearing stiffener, steel grade & Tooltip values equal Details tables & Web 1120 x 8, flange 340 x 16, intermediate stiffener 2440 mm / 10 mm, bearing stiffener 4 pairs / 10 mm, E 350A all match & \textcolor{passc}{\textbf{PASS}} &  \\ \hline
+TC-06 & TC-03 model: stiffener preview for member G1M1 vs 3D vs table & Same stiffener count in preview, 3D and table & Table / 3D: about 7 intermediate stiffeners. Preview: 11 interior lines & \textcolor{failc}{\textbf{FAIL}} & F10 (report only, root cause not traced) \\ \hline
+TC-07 & TC-03 model: cross-bracing frames along the span & Panel (9 frames, spacing 3.000 m) equals 3D model & 3D shows 7 frames (about 3.33 m spacing). 6 gaps x 3.000 m = 18 m, not 20 m & \textcolor{failc}{\textbf{FAIL}} & F5 (related: \href{https://github.com/Nidhikhare12/OsdagBridge/issues/93}{\#93}) \\ \hline
+TC-08 & TC-03 model, Transverse Design results, all 9 members & UR = force / capacity & Compression UR 0.76 and 0.56 although force / capacity is 0.24 and 0.15; hidden denominator about 10.9 kN, reproduced in 3 runs & \textcolor{failc}{\textbf{FAIL}} & F4: comment on \href{https://github.com/Nidhikhare12/OsdagBridge/issues/216}{\#216} \\ \hline
+TC-09 & TC-03 model, Girder 1, all load cases: reactions, Mz, Vy, Dy & R\_A + R\_B equals total load; R\_B equals the value in the diagram & R\_B / R\_A about 0.85 in every case; DD shear implies 93.78 kN, R\_A + R\_B = 86.40 kN & \textcolor{failc}{\textbf{FAIL}} & F11 (related: \href{https://github.com/Nidhikhare12/OsdagBridge/issues/73}{\#73}) \\ \hline
+TC-10 & TC-03 model, all ULS / SLS combinations of Girder 1 & Each factor multiplies its load case & All combinations equal the unfactored sum: BASIC 1 = BASIC 5 = SLS RARE = SLS FREQUENT = Envelope SLS; SEISMIC 1-4 equal; SLS QP 1 = QP 2. Reproduced in runs 0-5 & \textcolor{failc}{\textbf{FAIL}} & F13: comment on \href{https://github.com/Nidhikhare12/OsdagBridge/issues/174}{\#174} \\ \hline
+TC-11 & Span 20, carriageway 4.25, no footpath / median, skew blank, Pehalgam J\&K, Optimized, all defaults, 3 girders. Report run1\_optimized\_defaults\_dummy.pdf & Report consistent with design results & Overall status Fail (fatigue UR 1.35) but 'Girder design pass' on the same page; placeholders instead of figures; units wrong (1.12 mm); empty reactions table; end-diaphragm tables copy cross-bracing & \textcolor{failc}{\textbf{FAIL}} & F19: comment on \href{https://github.com/Nidhikhare12/OsdagBridge/issues/65}{\#65}. F20, F21: existing \href{https://github.com/Nidhikhare12/OsdagBridge/issues/66}{\#66}, \href{https://github.com/Nidhikhare12/OsdagBridge/issues/68}{\#68}, \href{https://github.com/Nidhikhare12/OsdagBridge/issues/70}{\#70}, \href{https://github.com/Nidhikhare12/OsdagBridge/issues/48}{\#48}, \href{https://github.com/Nidhikhare12/OsdagBridge/issues/104}{\#104}, \href{https://github.com/Nidhikhare12/OsdagBridge/issues/72}{\#72} \\ \hline
+TC-12 & Same as TC-11. Compare section table, BOM, dictionary & Same section area everywhere & Table 5.1 A = 195.84 cm2; dictionary, BOM and analysis A = 155.9 cm2 (empirical default, web 1092 mm) & \textcolor{failc}{\textbf{FAIL}} & F22: comment on \href{https://github.com/Nidhikhare12/OsdagBridge/issues/116}{\#116} \\ \hline
+TC-13 & Design type Custom, 4 girders (spacing 1.2875 m). G1 web 1200, flanges 360 x 18. G2, G3 340x16 top / 340x18 bottom, web 8. G4 unsymmetric, bottom flange 400 x 18. G1 bearing stiffener 12 mm. Bracing L 100x100x10 / IS 100x100x10. Report run2\_custom\_sections\_run2\_report.pdf & Each girder designed with its entered section; bracing section used & 4 girders, spacing and G1 stiffener 12 mm registered. But Table 5.1 shows G2 section (1120 x 340 x 16 / 18, A 202.48 cm2) for all 4 girders; bracing 40 x 40 x 3 for every pair & \textcolor{failc}{\textbf{FAIL}} & F23: related \href{https://github.com/Nidhikhare12/OsdagBridge/issues/151}{\#151}, \href{https://github.com/Nidhikhare12/OsdagBridge/issues/223}{\#223}. F24: new \href{https://github.com/Nidhikhare12/OsdagBridge/issues/221}{\#221} \\ \hline
+TC-14 & Run 2 inputs + Girder E 450A, Cross Bracing E 250A, End Diaphragm E 410A, Deck M50. Report run3\_materials\_run2\_report\_basic.pdf, file run3\_materials\_inputsc.osi & All four grades change the design & Girder grade: Md 4404.81 $\rightarrow$ 5637.23 kNm, steel stress limit 315 $\rightarrow$ 405 MPa, stiffener leg limit 169.03 $\rightarrow$ 149.07 mm (hand check exact). Deck M50: Ecm, fctm, capacities change. Bracing and end-diaphragm tables identical to run 2 & \textcolor{failc}{\textbf{PASS (girder, deck) / FAIL (bracing, end diaphragm)}} & F25: comment on \href{https://github.com/Nidhikhare12/OsdagBridge/issues/43}{\#43}; root cause in \href{https://github.com/Nidhikhare12/OsdagBridge/issues/221}{\#221} \\ \hline
+TC-15 & Deck M40 vs M50, clear cover top / bottom 50 / 50 & Cover check consistent and included in overall status & M40: required $\geq$ 50 mm PASS. M50: required $\geq$ 75 mm FAIL, not listed in Overall Design Status & \textcolor{failc}{\textbf{FAIL}} & F27: comment on \href{https://github.com/Nidhikhare12/OsdagBridge/issues/115}{\#115} and \href{https://github.com/Nidhikhare12/OsdagBridge/issues/65}{\#65} \\ \hline
+TC-16 & Optimized, 3 girders. Deck thickness 275; studs 22 / 125 / 3; clear covers 40 / 60 / 50; $\gamma_{M0}$ 1.25; $\gamma_{Mft}$ 1.15; Dialog Save then Design, no File > Save Input. Report run4\_custom\_additional\_inputs\_finalreport.pdf & Report prints the entered values & Deck 275.0, studs 22 / 125 / 3, $\gamma_{M0}$ 1.25, $\gamma_{Mft}$ 1.15 (fatigue capacity 108.58 x 1.15 = 124.86), covers 40 / 60 all printed & \textcolor{passc}{\textbf{PASS}} &  \\ \hline
+TC-17 & Same values as TC-16, then File > Save Input, reopen dialog, read .osi (osi\_files/F28\_*) & Saved file and dialog keep the values & Deck 275 $\rightarrow$ 250.0; studs, covers, $\gamma_{M0}$, limit-state ticks, loading tab values all reset to defaults. Repeated 3 times & \textcolor{failc}{\textbf{FAIL}} & F28: comment on \href{https://github.com/Nidhikhare12/OsdagBridge/issues/71}{\#71} \\ \hline
+TC-18 & Fatigue and Deflection unticked in Design Options (Cont.), then Design & Those checks are skipped / not reported & Fatigue (UR 1.18, governs status) and deflection still checked and reported; no Limit States table in the report & \textcolor{failc}{\textbf{FAIL}} & F29: comment on \href{https://github.com/Nidhikhare12/OsdagBridge/issues/146}{\#146} \\ \hline
+TC-19 & Deck thickness 250 $\rightarrow$ 275, Save, reopen, press Defaults & Deck thickness returns to 250 & Stays 275; the terminal prints the full working dictionary on each click & \textcolor{failc}{\textbf{FAIL}} & F30: new \href{https://github.com/Nidhikhare12/OsdagBridge/issues/222}{\#222} \\ \hline
+TC-20 & Run 2 inputs, File > Save Input, compare area / web\_depth with hand calculation & Saved properties match the entered sections & G2, G3 area 0.01559201 (default) vs 0.020248 hand; G4 0.01741475 vs 0.021328; G1 stored as string '2.23e-02'; web\_depth 1092 vs 1164 / 1086 & \textcolor{failc}{\textbf{FAIL}} & F26: new \href{https://github.com/Nidhikhare12/OsdagBridge/issues/223}{\#223} (ghost G0 key: existing \href{https://github.com/Nidhikhare12/OsdagBridge/issues/197}{\#197}) \\ \hline
+TC-21 & Run 5: app restarted, same inputs as run 1 (span 20, width 4.25, defaults) & Same results as run 1, no stale data & Report numerically identical to run 1 (Envelope ULS 690.518, UR 1.35); only date and author lines differ. No crash in runs 0-5 & \textcolor{passc}{\textbf{PASS}} &  \\ \hline
+TC-22 & Run 3 repeated with identical inputs & Identical report & Reports identical line by line & \textcolor{passc}{\textbf{PASS}} &  \\ \hline
+TC-23 & Table 4.1 'Summary of Maximum Demands' in run 1 vs run 5 (same inputs) & Same row order & Row order differs (run 1 starts SLS FREQUENT; run 5 starts Envelope ULS) & \textcolor{failc}{\textbf{FAIL (minor)}} & F31 (report only) \\ \hline
+TC-24 & File > Save Log Messages; Database > Save Outputs (.csv), Save Inputs (.csv); most Graphics, Help, Database items; 3 sessions & Action runs or shows a message & Nothing happens, no message, no file. Load Input, Save Input, Save 3D Model, Save CAD Image, Create Design Report work & \textcolor{failc}{\textbf{FAIL}} & F18 (existing \href{https://github.com/Nidhikhare12/OsdagBridge/issues/123}{\#123}, \href{https://github.com/Nidhikhare12/OsdagBridge/issues/53}{\#53}) \\ \hline
+TC-25 & Span 19.9 / 45.7 / -4.6666 (Optimized, rest default) & Rejected with a message & Popup 'Span must be between 20.0 m and 45.0 m'. After OK the field is cleared and Design does not run & \textcolor{passc}{\textbf{PASS}} &  \\ \hline
+TC-26 & Span empty, press Design; letters typed into span & Blocked with a message & 'Empty Required Fields' popup with red field; letters are not accepted & \textcolor{passc}{\textbf{PASS}} &  \\ \hline
+TC-27 & Carriageway width 4.2 / 23.7 (4.25 and 23.6 accepted) & Rejected below 4.25 m and above 23.6 m & 'Minimum carriageway width required is 4.25 m as per IRC 5:2015' / 'exceeds 23.6 m' & \textcolor{passc}{\textbf{PASS}} &  \\ \hline
+TC-28 & Skew 16 & Rejected outside -15 to 15 deg & 'Skew angle must be between -15.0 and 15.0 deg' & \textcolor{passc}{\textbf{PASS}} &  \\ \hline
+TC-29 & $\gamma_{M0}$ = 0; number of load cycles = 0 & Rejected & 'Partial factor ym0 must be between 1.0 and 2.0' (field then shows 1.0); 'No. of load cycles must be between 100,000 and 100,000,000'. Label prints 'ym0' instead of $\gamma_{M0}$ (cosmetic) & \textcolor{passc}{\textbf{PASS}} &  \\ \hline
+\end{longtable}}
+
+\section{UI inputs vs input dictionary (\texttt{.osi}) vs report}
+The \texttt{.osi} file is the saved Input Dictionary. The ``Report'' column is the design report of the run in which the value was entered (Design without File $>$ Save Input, except where stated).
+
+{\small
+\begin{longtable}{|p{4cm}|p{6cm}|p{5.5cm}|p{7cm}|}
+\hline \textbf{Input} & \textbf{Entered in UI} & \textbf{Saved \texttt{.osi}} & \textbf{Design report} \\ \hline \endhead
+Deck thickness & 275 & 250.0 (after Save Input) & 275.0 (Design without Save Input) \\ \hline
+Studs dia / spacing / count & 22 / 125 / 3 & 20 / 100 / 2 & 22 / 125 / 3 \\ \hline
+$\gamma_{M0}$, $\gamma_{Mft}$ & 1.25, 1.15 & 1.10, default & 1.25, 1.15 (capacity 108.58 x 1.15 = 124.86) \\ \hline
+Clear cover top / bottom & 40 / 60 & 50 / 50 & 40 / 60 \\ \hline
+Fatigue, Deflection ticks & unticked & ticked & checks still run and are reported \\ \hline
+Girder grade / deck grade & E 450A / M50 & E 450A / M50 & limits change correctly (fy 450, Ecm for M50) \\ \hline
+Bracing / end-diaphragm grade & E 250A / E 410A & E 250A / E 410A & Table 2.3 prints them, design tables unchanged \\ \hline
+Bracing section (Custom) & L 100x100x10 & L 100x100x10 & design 40 x 40 x 3 for every pair \\ \hline
+G1 section (Custom) & web 1200, flanges 360 x 18 & area saved '2.23e-02' (string) & Table 5.1: 1120, 340 x 16, A 202.48 cm$^2$ \\ \hline
+G2, G3 section (Custom) & web 1120, 340x16 / 340x18, tw 8 (hand A 0.020248 m$^2$) & area 0.01559201 m$^2$ & A 202.48 cm$^2$ (matches hand) \\ \hline
+G4 section (Custom) & top 340 x 16, bottom 400 x 18 (hand A 0.021328 m$^2$) & area 0.01741475 m$^2$ & A 202.48 cm$^2$ (G2 section) \\ \hline
+Number of girders, spacing & 4, 1.2875 m & 4 (plus phantom G0 keys) & 4, 1.2875 m \\ \hline
+\end{longtable}}
+
+Reading: custom values do reach the design when \emph{File $>$ Save Input} is not used (deck 275, studs, $\gamma$ factors, covers). \emph{File $>$ Save Input} replaces them with defaults before writing the file, so a saved \texttt{.osi} cannot carry those values (finding F28). Bracing and end-diaphragm grade and section are stored and printed in the inputs table but never used by the design (F24, F25).
+
+\section{Multi-run stability}
+{\small
+\begin{longtable}{|p{1cm}|p{8cm}|p{2cm}|p{4cm}|p{7cm}|}
+\hline \textbf{Run} & \textbf{Inputs} & \textbf{Girders} & \textbf{Envelope ULS max BM (kNm)} & \textbf{Outcome} \\ \hline \endhead
+0 & Optimized, defaults, skew 0 / 15 & 5 & 512.24 (skew 0) & passes in UI; F1, F4, F5, F10, F11, F13 \\ \hline
+1 & Optimized, defaults & 3 & 690.518 & UR 1.35 Fail (fatigue) \\ \hline
+2 & Custom, per-girder sections & 4 & 724.837 & UR 1.20 Fail; F23, F24 \\ \hline
+3 & Run 2 + grades E 450A / E 250A / E 410A, deck M50 & 4 & 724.837 & Fail (stiffener leg, fatigue); F25, F27 \\ \hline
+4 & Optimized + custom Additional Inputs (no Save Input) & 3 & 723.775 & Fail (fatigue UR 1.18); F28, F29 \\ \hline
+5 & Restart, same as run 1 & 3 & 690.518 & identical to run 1 \\ \hline
+\end{longtable}}
+
+Six runs completed without a crash. Each run reflected the changed inputs (girder count 3 $\rightarrow$ 4 $\rightarrow$ 3, sections, grades), and run 5 after an application restart reproduced run 1 exactly (Envelope ULS 690.518 kNm, UR 1.35, all tables equal except date and author lines). Run 3 repeated with the same inputs gave an identical report. I did not observe the stale segment-table problem reported in \href{https://github.com/Nidhikhare12/OsdagBridge/issues/168}{\#168} and \href{https://github.com/Nidhikhare12/OsdagBridge/issues/125}{\#125} in my runs, so I did not comment on them. Table 4.1 of the report lists its rows in a different order between run 1 and run 5 (F31, minor).
+
+\section{3D CAD and plots}
+\begin{itemize}[nosep]
+\item \textbf{Works:} 3D model generated in all runs; layer toggles, node and element numbering, rotation, TOP/front/left views and hover highlighting work without a crash; skew 15 is drawn correctly in the top view; girder web, flange and stiffener tooltips equal the Details tables.
+\item \textbf{Fails:} at skew 15 the Girder 1 plots start at $x=-1.407$~m with a spike near 4~m, and the design shear (8.25~kN) differs from the plotted maximum (7.61~kN), while skew 0 is consistent (F1). The stiffener preview shows 11 interior lines against about 7 in the 3D model and table (F10). The 3D model has 7 cross-bracing frames, the panel lists 9 at 3.000~m (F5). Reaction R\_B in the analysis panel disagrees with the diagram and the shear (F11).
+\end{itemize}
+
+\section{Findings and GitHub status}
+{\small
+\begin{longtable}{|p{1.1cm}|p{12cm}|p{3cm}|p{7cm}|}
+\hline \textbf{ID} & \textbf{Finding} & \textbf{Severity} & \textbf{GitHub} \\ \hline \endhead
+F13 & Load combination factors are not applied (all combinations equal the unfactored sum) & Critical (unsafe) & Existing issue \#174; comment added \\ \hline
+F28 & File > Save Input overwrites custom Additional Inputs with defaults & High & Existing issue \#71; comment added with full list and root cause \\ \hline
+F29 & Fatigue / Deflection limit-state ticks are ignored & High & Existing issue \#146; comment added \\ \hline
+F25 & Bracing and end-diaphragm steel grade have no effect & High & Existing issue \#43; comment added with root cause \\ \hline
+F24 & Custom cross-bracing section ignored (lightest angle from a hard-coded list is used) & High & NEW issue \#221 \\ \hline
+F30 & Defaults button restores last saved values, prints dictionary to console & Medium & NEW issue \#222 \\ \hline
+F26 & Saved .osi section properties do not match entered sections & Medium & NEW issue \#223 \\ \hline
+F4 & Cross-bracing compression UR is force / 10.9 kN, not force / capacity & High & Existing issue \#216; comment added \\ \hline
+F19 & Report summary says 'design pass' while overall status is Fail & Medium & Existing issue \#65; comment added \\ \hline
+F22 & Optimized mode: section table and BOM use empirical default section & Medium & Existing issue \#116; comment added \\ \hline
+F27 & Deck clear cover required 75 mm for M50 (50 mm for M40); FAIL not in overall status & Medium & Existing issue \#115; comment added \\ \hline
+F23 & Custom per-girder sections ignored in report and design tables & High & Related to existing \#151; see also \#223 \\ \hline
+F21 & End-diaphragm tables duplicate cross-bracing tables & Medium & Existing issue \#72 \\ \hline
+F18 & Several menu actions do nothing & Medium & Existing issues \#123, \#53 \\ \hline
+F20 & Report: placeholders, wrong units, empty tables & Medium & Existing issues \#66, \#68, \#70, \#48, \#104 \\ \hline
+F11 & Support reaction R\_B disagrees with shear and diagram & Medium & Related to existing \#73 (not posted separately) \\ \hline
+F5 & Cross-bracing frame count and spacing differ between 3D and panel & Medium & Related to existing \#93 (not posted separately) \\ \hline
+F16 & Crash barrier load much lower than input & Medium (to verify) & Existing issue \#143 (not posted separately) \\ \hline
+F1 & Skew 15: Girder 1 plots start at negative x, spike, Vd differs from plotted Vy & Medium & Not posted: root cause not traced; related \#198, \#132, \#89 \\ \hline
+F10 & Stiffener preview shows 11 interior lines, 3D and table about 7 & Low & Not posted: root cause not traced \\ \hline
+F31 & Table 4.1 row order is not deterministic & Low & Not posted (minor) \\ \hline
+\end{longtable}}
+
+\subsection*{The three new issues in short}
+\textbf{\href{https://github.com/Nidhikhare12/OsdagBridge/issues/221}{\#221} Custom bracing section ignored (F24).} \texttt{crossbracingforces.py} (\texttt{run\_member\_designs}, about lines 619--626) copies the template dictionary \texttt{design\_dict\_tension\_bolted} / \texttt{design\_dict\_struts\_bolted} from \texttt{core/utils/connect.py} (lines 130 and 376) and changes only load and length. The template hard-codes material E~250 and the full angle list, so Osdag picks the lightest passing angle (40$\times$40$\times$3). The same pattern is in \texttt{plategirderbridge.py} (about lines 2762--2778). Fix: put the user's section into \texttt{Member.Designation} for Custom mode and the user's grade into \texttt{Material}.
+
+\textbf{\href{https://github.com/Nidhikhare12/OsdagBridge/issues/222}{\#222} Defaults button (F30).} In \texttt{additional\_inputs.py}, \texttt{reset\_active\_tab\_defaults} (about line 446) restores from \texttt{default\_input\_dict}, which is the same object as the main \texttt{input\_dict} (line about 223) and is overwritten by \texttt{\_save\_inputs} (line about 519). Fix: keep a deep copy of the factory defaults; remove the leftover \texttt{pprint} (lines about 158--161).
+
+\textbf{\href{https://github.com/Nidhikhare12/OsdagBridge/issues/223}{\#223} Stale section properties in the saved file (F26).} G2--G4 areas equal the empirical default section (0.01559201 m$^2$) instead of the entered one (hand: 0.020248 and 0.021328 m$^2$); G1 is saved as a 3-digit string; \texttt{web\_depth} is wrong. Fix: recompute properties for every girder before saving and store floats.
+
+\section{Limitations and work not done}
+\begin{itemize}[nosep]
+\item I compared the Input Dictionary with the UI values and the reports in detail (section above). I did not compare every field of the Output Dictionary with the report and the Output Dock; I checked the cross-bracing forces, section properties and the load-case results only.
+\item The deck design tables (Tables 5.16--5.22) were not hand-checked.
+\item F1 (skew plots) and F10 (stiffener preview) are documented here but their root cause is not traced, so no issue was posted. F16 and F17 (double-angle properties) need further verification.
+\item The saved \texttt{.osi} files cannot hold the custom deck, stud, $\gamma$ and tick values because of F28. These values are shown by the reports and in the screen recording instead.
+\item Clear cover $=0/300$ and negative or text $\gamma$ values were not tested.
+\end{itemize}
+
+\section{Repository contents}
+\begin{tabular}{ll}
+\texttt{test\_cases/} & TEST\_CASES.csv and .md (same table as section 3) \\
+\texttt{osi\_files/} & saved input files of runs 2 and 3 and the two files that show F28 \\
+\texttt{reports/} & the six generated design reports (runs 1 to 5, run 3 twice) \\
+\texttt{issues/}, \texttt{comments/} & text of the 3 new issues and the 8 comments \\
+\texttt{scripts/} & scripts that generate the test-case table and this report \\
+\end{tabular}
+
+\end{document}
