@@ -17,7 +17,7 @@ Main document: [`docs/report.pdf`](docs/report.pdf) (LaTeX source `docs/report.t
 | [#223](https://github.com/Nidhikhare12/OsdagBridge/issues/223) | Saved `.osi` section properties for G2-G4 do not match the entered sections |
 
 ## Comments added to existing issues
-[#174](https://github.com/Nidhikhare12/OsdagBridge/issues/174) (load combination factors), [#71](https://github.com/Nidhikhare12/OsdagBridge/issues/71) (Save Input resets values), [#146](https://github.com/Nidhikhare12/OsdagBridge/issues/146) (limit-state ticks), [#43](https://github.com/Nidhikhare12/OsdagBridge/issues/43) (bracing grade, root cause), [#216](https://github.com/Nidhikhare12/OsdagBridge/issues/216), [#65](https://github.com/Nidhikhare12/OsdagBridge/issues/65), [#115](https://github.com/Nidhikhare12/OsdagBridge/issues/115), [#116](https://github.com/Nidhikhare12/OsdagBridge/issues/116). Text in `comments/`.
+[#174](https://github.com/Nidhikhare12/OsdagBridge/issues/174) (load combination factors), [#71](https://github.com/Nidhikhare12/OsdagBridge/issues/71) (Save Input resets values), [#146](https://github.com/Nidhikhare12/OsdagBridge/issues/146) (limit-state ticks), [#43](https://github.com/Nidhikhare12/OsdagBridge/issues/43) (bracing grade, root cause), [#216](https://github.com/Nidhikhare12/OsdagBridge/issues/216), [#65](https://github.com/Nidhikhare12/OsdagBridge/issues/65), [#115](https://github.com/Nidhikhare12/OsdagBridge/issues/115), [#116](https://github.com/Nidhikhare12/OsdagBridge/issues/116). Text in `COMMENTS_on_existing_issues.md`.
 
 ## Folders
 | Folder | Content |
@@ -25,7 +25,7 @@ Main document: [`docs/report.pdf`](docs/report.pdf) (LaTeX source `docs/report.t
 | `test_cases/` | `TEST_CASES.csv` and `TEST_CASES.md`: ID, exact parameters, expected, actual, pass / fail, finding |
 | `osi_files/` | saved input files: runs 2 and 3, and two files showing that File > Save Input resets custom values |
 | `reports/` | the generated design reports of runs 1-5 |
-| `issues/`, `comments/` | text of the new issues and of the comments |
+| `issues/` and `COMMENTS_on_existing_issues.md` | text of the new issues and of the comments |
 | `scripts/` | scripts that generate the test-case table and the LaTeX report |
 | `docs/` | `report.pdf`, `report.tex` |
 
